@@ -1,6 +1,8 @@
 import cv2
 from cv2 import aruco
 
+import coordinate_transforms as ct
+
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
 parameters =  aruco.DetectorParameters_create()
 
@@ -20,30 +22,17 @@ def find_markers(gray, camera_matrix, dist_coef, marker_size = 0.33):
         
     return corners, ids, rvecs, tvecs
 
+def store(i, x, y, z):
+    #success = db_connection.store({"id":i, "x":x, "y":y, "z":z})
+    with open("db.csv", "a") as fs:
+        fs.write(f"\n{i},{x},{y},{z}")
+    return {'success':True}
 
-######
-# Everything below is a template code
-#####
-
-
-def translate(drone_tvec, drone_rvec, marker_tvec, marker_rvec):
-    """
-    Translates coordinates of a found marker into global ones with respect to postition of a drone
-    input: (x, y, z) - tvec of a drone
-           (pitch, yaw, roll) - rvec of a drone
-
-    """
-    return x, y, z
-
-def store(i, x, y, z, db_connection):
-    success = db_connection.store({"id":i, "x":x, "y":y, "z":z})
-    return success
-
-def process_markers(drone_tvec, drone_rvec, corners, ids, revcs, tvecs):
+def process_markers(drone_tvec, drone_rvec, corners, ids, rvecs, tvecs):
     valid_ids = set()
-    for i, c, rvec, tvec in zip(ids, corners, revc, tvec):
+    for i, c, rvec, tvec in zip(ids, corners, rvecs, tvecs):
         if i in valid_ids:
-            x, y, z = translate(drone_tvec, drone_rvec, tvec, rvec)
+            x, y, z = ct.transform(tvec, rvec, drone_tvec, drone_rvec)[0].squeeze()
             store(i, x, y, z)
 
 
